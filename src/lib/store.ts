@@ -1,6 +1,5 @@
 import {
   AgentProfile,
-  DashboardSnapshot,
   Deal,
   Intent,
   Listing,
@@ -34,8 +33,4 @@ export function getStore(): ProxyStore {
   }
 
   return globalThis.__proxyStore__;
-}
-
-export function serializeSnapshot(snapshot: DashboardSnapshot) {
-  return JSON.parse(JSON.stringify(snapshot)) as DashboardSnapshot;
 }

@@ -1,35 +1,63 @@
 @import "tailwindcss";
 
 :root {
-  --background: #040816;
-  --foreground: #ecf3ff;
-  --panel: rgba(15, 23, 42, 0.7);
+  --font-display: "Aptos", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --background: #080a0f;
+  --background-raised: #0f131b;
+  --background-panel: rgba(12, 16, 24, 0.94);
+  --background-panel-strong: #111620;
+  --background-panel-soft: rgba(17, 22, 32, 0.78);
+  --border-soft: rgba(160, 145, 121, 0.12);
+  --border-strong: rgba(160, 145, 121, 0.22);
+  --text-primary: #edf0f5;
+  --text-secondary: #a5b0be;
+  --text-muted: #6e7785;
+  --accent: #c7a06a;
+  --accent-strong: #ebbe83;
+  --accent-soft: rgba(199, 160, 106, 0.14);
+  --positive: #72bf8c;
+  --warning: #c7a06a;
+  --danger: #ff8b7a;
+  --shadow-panel: 0 20px 50px rgba(0, 0, 0, 0.34);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-foreground: var(--text-primary);
   --font-sans: var(--font-display);
   --font-mono: var(--font-mono);
 }
 
 * {
   box-sizing: border-box;
+  border-color: var(--border-soft);
 }
 
 html {
+  min-height: 100%;
   background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.12), transparent 22%),
-    radial-gradient(circle at 85% 20%, rgba(125, 211, 252, 0.08), transparent 20%),
-    linear-gradient(180deg, #07101f 0%, #020617 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(199, 160, 106, 0.13), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(114, 191, 140, 0.08), transparent 24%),
+    linear-gradient(180deg, #0b1017 0%, #080a0f 48%, #06080c 100%);
+  background-size: 52px 52px, 52px 52px, auto, auto, auto;
+  color-scheme: dark;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   background: transparent;
-  color: var(--foreground);
+  color: var(--text-primary);
   font-family: var(--font-display), sans-serif;
+  font-feature-settings: "ss01" on, "tnum" on;
+  letter-spacing: -0.01em;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 a {
@@ -37,13 +65,35 @@ a {
   text-decoration: none;
 }
 
+button,
 input,
 select,
-button {
+textarea {
   font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
 }
 
 ::selection {
-  background: rgba(103, 232, 249, 0.35);
+  background: rgba(199, 160, 106, 0.32);
   color: white;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(5, 8, 12, 0.92);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(5, 8, 12, 0.92);
+  border-radius: 999px;
+  background: rgba(130, 148, 172, 0.42);
 }

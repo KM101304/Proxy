@@ -1,16 +1,15 @@
 # Proxy
 
-Proxy is a production-style MVP for an agent-native marketplace execution layer. Users define purchase intent once, autonomous agents continuously negotiate on their behalf, and Proxy only earns revenue when a deal successfully settles.
+Proxy is a rebuilt operational console for autonomous commerce execution. The current environment is intentionally honest about its limits: the UI now behaves like a routed command center, while the backend data layer still runs on seeded in-memory simulation services.
 
 ## Stack
 
 - Next.js App Router
 - TypeScript
 - Tailwind CSS v4
-- Supabase-ready client scaffolding
-- Modular Node-style services for listings, negotiation, deals, and agent execution
+- Local mock domain services for listings, negotiation, deals, and agent execution
 
-## Local Run
+## Local run
 
 ```bash
 npm install
@@ -19,64 +18,51 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Included MVP Surfaces
+## Product surfaces
 
-- Intent registry via `POST /api/intents`
-- Continuous agent execution via `POST /api/agents/run`
-- Deal and activity feed via `GET /api/deals`
-- Live dashboard snapshot via `GET /api/dashboard`
-- Agent-centric dashboard with live polling and intent creation
+- `/overview`
+  - operator queue, live negotiation desk, and market posture
+- `/intent-flow`
+  - launch new intents and review guardrails
+- `/matches`
+  - supply coverage and price fit
+- `/negotiations`
+  - active negotiation book and escalations
+- `/deals`
+  - full deal registry with detail pages
+- `/inventory`
+  - listing inventory and demand linkage
+- `/policies`
+  - intent-level execution rules
+- `/analytics`
+  - restrained operational analytics for the current simulation
+- `/integrations`
+  - explicit integration readiness and gaps
+- `/notifications`
+  - timeline of event activity
+- `/settings`
+  - workspace mode and operating principles
 
-## Service Architecture
+## API routes
 
-- `src/services/listingService.ts`
-  - abstracts listing ingestion with mock data today and real integrations later
-- `src/services/negotiationService.ts`
-  - generates offer messages, simulates seller outcomes, and tracks acceptance probability
-- `src/services/dealService.ts`
-  - calculates savings and transaction fees only on successful execution
-- `src/services/agentService.ts`
-  - runs the execution loop, advances negotiations, and composes dashboard state
+- `POST /api/intents`
+  - create a new intent and seed its agent policy
+- `POST /api/agents/run`
+  - advance one execution cycle in the simulation
+- `GET /api/dashboard`
+  - retrieve the current snapshot
+- `GET /api/deals`
+  - retrieve deals and events
 
-## Supabase Readiness
+## Current honesty layer
 
-The MVP ships with a lightweight client helper in `src/lib/supabase/client.ts`. To connect a real project, define:
+- Listings are seeded from `src/lib/mock-data.ts`
+- State is stored in-memory via `src/lib/store.ts`
+- The console exposes manual cycle advancement instead of pretending the simulation is a live market feed
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-```
+## Next backend steps
 
-Suggested tables for persistence:
-
-### `intents`
-
-- `id`
-- `user_id`
-- `item`
-- `location`
-- `max_price`
-- `urgency`
-- `flexibility`
-- `status`
-
-### `deals`
-
-- `id`
-- `intent_id`
-- `listing_id`
-- `current_offer`
-- `status`
-- `savings_amount`
-- `transaction_fee`
-- `created_at`
-
-## Revenue Logic
-
-On accepted settlement:
-
-- `savings = asking_price - final_price`
-- if `savings > 0`, `transaction_fee = savings * 0.10`
-- otherwise, `transaction_fee = final_price * 0.02`
-
-Proxy only recognizes revenue on successful deals.
+1. Persist intents, deals, events, and agent policies.
+2. Replace seeded listings with real ingestion connectors.
+3. Add authenticated operator actions and audit history.
+4. Move settlement and approval rules into durable workflows.

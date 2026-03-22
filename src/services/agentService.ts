@@ -23,9 +23,9 @@ function maybeCreateDeal(intent: Intent, agent: AgentProfile, listing: Listing) 
     id: `deal-${Math.random().toString(36).slice(2, 10)}`,
     intent_id: intent.id,
     listing_id: listing.id,
-      current_offer: opening.amount,
-      status: "negotiating",
-      savings_amount: roundCurrency(Math.max(0, listing.price - opening.amount)),
+    current_offer: opening.amount,
+    status: "negotiating",
+    savings_amount: roundCurrency(Math.max(0, listing.price - opening.amount)),
     transaction_fee: 0,
     created_at: createdAt,
     updated_at: createdAt,
@@ -80,19 +80,37 @@ function continueDeal(intent: Intent, agent: AgentProfile, listing: Listing, dea
           deal.current_offer + Math.max(25, (response.amount - deal.current_offer) * 0.6),
         ),
       );
-      deal.current_offer = nextOffer;
-      deal.offers_sent += 1;
-      deal.savings_amount = roundCurrency(Math.max(0, listing.price - nextOffer));
-      deal.last_message = `Agent advanced execution to $${nextOffer}.`;
-      store.events.unshift(
-        negotiationService.createEvent(
-          deal.id,
-          "offer",
-          "agent",
-          `Execution updated. I can settle at $${nextOffer} if we close now.`,
-          nextOffer,
-        ),
-      );
+
+      if (nextOffer > deal.current_offer) {
+        deal.current_offer = nextOffer;
+        deal.offers_sent += 1;
+        deal.savings_amount = roundCurrency(Math.max(0, listing.price - nextOffer));
+        deal.last_message = `Agent advanced execution to $${nextOffer}.`;
+        store.events.unshift(
+          negotiationService.createEvent(
+            deal.id,
+            "offer",
+            "agent",
+            `Execution updated. I can settle at $${nextOffer} if we close now.`,
+            nextOffer,
+          ),
+        );
+      } else if (deal.status === "close_to_accept" && intent.agent_permissions.canCloseInstantly) {
+        const accepted = dealService.updateAcceptedDeal(deal, listing.price, deal.current_offer);
+        accepted.last_message = "Seller aligned inside the approval band.";
+        Object.assign(deal, accepted);
+        store.events.unshift(
+          negotiationService.createEvent(
+            deal.id,
+            "accept",
+            "seller",
+            "Seller aligned inside the approval band.",
+            deal.current_offer,
+          ),
+        );
+        intent.status = "completed";
+        agent.best_deal_id = deal.id;
+      }
     }
 
     return deal;
@@ -108,20 +126,23 @@ function continueDeal(intent: Intent, agent: AgentProfile, listing: Listing, dea
     const retryOffer = roundCurrency(
       Math.min(intent.max_price, deal.current_offer + clamp(intent.max_price * 0.03, 30, 95)),
     );
-    deal.current_offer = retryOffer;
-    deal.offers_sent += 1;
-    deal.status = "negotiating";
-    deal.savings_amount = roundCurrency(Math.max(0, listing.price - retryOffer));
-    deal.last_message = `Agent re-entered negotiation at $${retryOffer}.`;
-    store.events.unshift(
-      negotiationService.createEvent(
-        deal.id,
-        "offer",
-        "agent",
-        `Updated execution path: $${retryOffer} with flexible pickup.`,
-        retryOffer,
-      ),
-    );
+
+    if (retryOffer > deal.current_offer) {
+      deal.current_offer = retryOffer;
+      deal.offers_sent += 1;
+      deal.status = "negotiating";
+      deal.savings_amount = roundCurrency(Math.max(0, listing.price - retryOffer));
+      deal.last_message = `Agent re-entered negotiation at $${retryOffer}.`;
+      store.events.unshift(
+        negotiationService.createEvent(
+          deal.id,
+          "offer",
+          "agent",
+          `Updated execution path: $${retryOffer} with flexible pickup.`,
+          retryOffer,
+        ),
+      );
+    }
   }
 
   return deal;
@@ -136,6 +157,11 @@ export const agentService = {
     for (const intent of activeIntents) {
       const agent = store.agents.find((candidate) => candidate.intent_id === intent.id);
       if (!agent) continue;
+      agent.actions_taken_today = Math.min(agent.actions_taken_today, agent.max_actions_per_day);
+
+      if (agent.actions_taken_today >= agent.max_actions_per_day) {
+        continue;
+      }
 
       const matches = listingService.findMatches(intent);
       const selected = matches[0];
@@ -163,7 +189,7 @@ export const agentService = {
     }
 
     store.lastRunAt = now.toISOString();
-    store.events = store.events.slice(0, 40);
+    store.events = store.events.slice(0, 80);
 
     return this.getDashboardSnapshot();
   },
@@ -187,7 +213,10 @@ export const agentService = {
 
       return {
         intent,
-        agent,
+        agent: {
+          ...agent,
+          actions_taken_today: Math.min(agent.actions_taken_today, agent.max_actions_per_day),
+        },
         bestDeal,
         bestListing,
         activity,

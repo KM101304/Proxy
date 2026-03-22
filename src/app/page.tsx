@@ -1,10 +1,5 @@
-import { Dashboard } from "@/components/dashboard";
-import { agentService } from "@/services/agentService";
-
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  const snapshot = agentService.getDashboardSnapshot();
-
-  return <Dashboard initialSnapshot={snapshot} />;
+  redirect("/overview");
 }

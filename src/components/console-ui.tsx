@@ -14,10 +14,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-5 border-b border-[var(--border-soft)] pb-5 md:flex-row md:items-end md:justify-between">
+    <div className="flex flex-col gap-5 border-b border-[var(--border-strong)] pb-5 md:flex-row md:items-end md:justify-between">
       <div className="max-w-3xl">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-[var(--text-muted)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
           {eyebrow}
         </div>
         <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[var(--text-primary)] md:text-[3.25rem]">
@@ -48,7 +48,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        "rounded-[22px] border border-[var(--border-soft)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0)),var(--background-panel)] shadow-[var(--shadow-panel)]",
+        "glass-panel rounded-[22px]",
         className,
       )}
     >
@@ -87,19 +87,19 @@ export function MetricCard({
 }) {
   const toneClass =
     tone === "accent"
-      ? "border-[rgba(199,160,106,0.18)] bg-[rgba(199,160,106,0.08)]"
+      ? "border-[rgba(56,189,248,0.2)] bg-[rgba(56,189,248,0.08)] shadow-[0_0_15px_rgba(56,189,248,0.1)]"
       : tone === "positive"
-        ? "border-[rgba(84,199,154,0.18)] bg-[rgba(84,199,154,0.08)]"
+        ? "border-[rgba(16,185,129,0.2)] bg-[rgba(16,185,129,0.08)] shadow-[0_0_15px_rgba(16,185,129,0.1)]"
         : tone === "warning"
-          ? "border-[rgba(215,184,111,0.18)] bg-[rgba(215,184,111,0.08)]"
+          ? "border-[rgba(245,158,11,0.2)] bg-[rgba(245,158,11,0.08)] shadow-[0_0_15px_rgba(245,158,11,0.1)]"
           : "border-[var(--border-soft)] bg-[var(--background-panel-soft)]";
 
   return (
-    <div className={cn("rounded-[20px] border p-4", toneClass)}>
+    <div className={cn("glass-panel rounded-[20px] p-4 transition-transform hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)]", toneClass)}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">{label}</div>
-          <div className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-[var(--text-primary)]">
+          <div className="mt-2 text-2xl font-bold tracking-[-0.05em] text-[var(--text-primary)]">
             {value}
           </div>
         </div>
@@ -107,11 +107,11 @@ export function MetricCard({
           className={cn(
             "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
             tone === "accent"
-              ? "bg-[var(--accent)]"
+              ? "bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]"
               : tone === "positive"
-                ? "bg-[var(--positive)]"
+                ? "bg-[var(--positive)] shadow-[0_0_10px_var(--positive)]"
                 : tone === "warning"
-                  ? "bg-[var(--warning)]"
+                  ? "bg-[var(--warning)] shadow-[0_0_10px_var(--warning)]"
                   : "bg-[var(--border-strong)]",
           )}
         />
@@ -130,19 +130,19 @@ export function StatusBadge({
 }) {
   const toneClass =
     tone === "info"
-      ? "border-[rgba(199,160,106,0.22)] bg-[rgba(199,160,106,0.12)] text-[var(--accent-strong)]"
+      ? "border-[rgba(56,189,248,0.3)] bg-[rgba(56,189,248,0.15)] text-[var(--accent-strong)] shadow-[0_0_8px_rgba(56,189,248,0.2)]"
       : tone === "success"
-        ? "border-[rgba(84,199,154,0.24)] bg-[rgba(84,199,154,0.12)] text-[var(--positive)]"
+        ? "border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.15)] text-[var(--positive)] shadow-[0_0_8px_rgba(16,185,129,0.2)]"
         : tone === "warning"
-          ? "border-[rgba(215,184,111,0.24)] bg-[rgba(215,184,111,0.12)] text-[var(--warning)]"
+          ? "border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.15)] text-[var(--warning)] shadow-[0_0_8px_rgba(245,158,11,0.2)]"
           : tone === "danger"
-            ? "border-[rgba(255,139,122,0.24)] bg-[rgba(255,139,122,0.12)] text-[var(--danger)]"
+            ? "border-[rgba(239,68,68,0.3)] bg-[rgba(239,68,68,0.15)] text-[var(--danger)] shadow-[0_0_8px_rgba(239,68,68,0.2)]"
             : "border-[var(--border-soft)] bg-[var(--background-panel-soft)] text-[var(--text-secondary)]";
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.2em]",
+        "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] uppercase font-bold tracking-[0.2em]",
         toneClass,
       )}
     >
@@ -159,8 +159,8 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-[var(--border-strong)] bg-[rgba(13,19,28,0.6)] px-5 py-10 text-center">
-      <div className="mx-auto inline-flex rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)] p-3 text-[var(--text-secondary)]">
+    <div className="rounded-[24px] border border-dashed border-[var(--border-strong)] bg-[rgba(15,23,42,0.4)] px-5 py-10 text-center">
+      <div className="mx-auto inline-flex rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)] p-3 text-[var(--text-secondary)] shadow-sm">
         <AlertTriangle className="h-5 w-5" />
       </div>
       <h3 className="mt-4 text-lg font-medium text-[var(--text-primary)]">{title}</h3>
@@ -173,7 +173,7 @@ export function EmptyState({
 
 export function TableShell({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-[20px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)]">
+    <div className="overflow-hidden rounded-[20px] border border-[var(--border-soft)] bg-black/20">
       <div className="overflow-x-auto">{children}</div>
     </div>
   );
@@ -193,9 +193,9 @@ export function KeyValueGrid({
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-[18px] border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] p-4"
+          className="rounded-[18px] border border-[var(--border-soft)] bg-[rgba(15,23,42,0.5)] p-4 transition-colors hover:bg-[rgba(15,23,42,0.7)]"
         >
-          <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">
+          <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)] font-bold">
             {item.label}
           </div>
           <div className="mt-2 text-sm leading-6 text-[var(--text-primary)]">{item.value}</div>
@@ -221,7 +221,7 @@ export function Timeline({
       {items.map((item, index) => (
         <div key={item.id} className="grid grid-cols-[16px_1fr] gap-4">
           <div className="relative flex justify-center">
-            <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
+            <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
             {index < items.length - 1 ? (
               <span className="absolute top-5 bottom-0 w-px bg-[var(--border-soft)]" />
             ) : null}
@@ -229,7 +229,7 @@ export function Timeline({
           <div className={cn("pb-5", index < items.length - 1 ? "border-b border-[var(--border-soft)]" : "")}>
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--accent-strong)] font-semibold">
                   {item.eyebrow}
                 </div>
                 <div className="mt-1 text-sm font-medium text-[var(--text-primary)]">
@@ -249,3 +249,4 @@ export function Timeline({
     </div>
   );
 }
+

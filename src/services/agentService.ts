@@ -6,7 +6,7 @@ import { listingService } from "@/services/listingService";
 import { negotiationService } from "@/services/negotiationService";
 import { AgentProfile, DashboardSnapshot, Deal, Intent, Listing } from "@/types/domain";
 
-function maybeCreateDeal(intent: Intent, agent: AgentProfile, listing: Listing) {
+async function maybeCreateDeal(intent: Intent, agent: AgentProfile, listing: Listing) {
   const store = getStore();
   const existing = store.deals.find(
     (deal) => deal.intent_id === intent.id && deal.listing_id === listing.id && deal.status !== "expired",
@@ -16,7 +16,7 @@ function maybeCreateDeal(intent: Intent, agent: AgentProfile, listing: Listing) 
     return existing;
   }
 
-  const opening = negotiationService.generateOpeningOffer(intent, listing, agent);
+  const opening = await negotiationService.generateOpeningOffer(intent, listing, agent);
   const createdAt = new Date().toISOString();
 
   const deal: Deal = {
@@ -43,22 +43,23 @@ function maybeCreateDeal(intent: Intent, agent: AgentProfile, listing: Listing) 
   return deal;
 }
 
-function continueDeal(intent: Intent, agent: AgentProfile, listing: Listing, deal: Deal) {
+async function continueDeal(intent: Intent, agent: AgentProfile, listing: Listing, deal: Deal) {
   const store = getStore();
   if (deal.status === "accepted" || deal.status === "expired") {
     return deal;
   }
 
-  const response = negotiationService.evaluateResponse(intent, listing, deal);
+  const response = await negotiationService.evaluateResponse(intent, listing, deal);
   deal.updated_at = new Date().toISOString();
   deal.acceptance_probability = response.probability;
 
   if (response.type === "accept") {
-    const accepted = dealService.updateAcceptedDeal(deal, listing.price, deal.current_offer);
+    const acceptedAmount = deal.current_offer;
+    const accepted = dealService.updateAcceptedDeal(deal, listing.price, acceptedAmount);
     accepted.last_message = response.message;
     Object.assign(deal, accepted);
     store.events.unshift(
-      negotiationService.createEvent(deal.id, "accept", "seller", response.message, deal.current_offer),
+      negotiationService.createEvent(deal.id, "accept", "seller", response.message, acceptedAmount),
     );
     intent.status = "completed";
     agent.best_deal_id = deal.id;
@@ -73,44 +74,40 @@ function continueDeal(intent: Intent, agent: AgentProfile, listing: Listing, dea
       negotiationService.createEvent(deal.id, "counter", "seller", response.message, response.amount),
     );
 
-    if (intent.agent_permissions.canIncreaseOffer) {
-      const nextOffer = roundCurrency(
-        Math.min(
-          intent.max_price,
-          deal.current_offer + Math.max(25, (response.amount - deal.current_offer) * 0.6),
-        ),
-      );
+    const agentDecision = await negotiationService.generateAgentCounterOffer(intent, listing, agent, deal, response.amount, response.message);
 
-      if (nextOffer > deal.current_offer) {
-        deal.current_offer = nextOffer;
+    if (agentDecision.action === "increase" && agentDecision.amount && intent.agent_permissions.canIncreaseOffer) {
+      if (agentDecision.amount > deal.current_offer) {
+        deal.current_offer = agentDecision.amount;
         deal.offers_sent += 1;
-        deal.savings_amount = roundCurrency(Math.max(0, listing.price - nextOffer));
-        deal.last_message = `Agent advanced execution to $${nextOffer}.`;
+        deal.savings_amount = roundCurrency(Math.max(0, listing.price - agentDecision.amount));
+        deal.last_message = agentDecision.message;
         store.events.unshift(
-          negotiationService.createEvent(
-            deal.id,
-            "offer",
-            "agent",
-            `Execution updated. I can settle at $${nextOffer} if we close now.`,
-            nextOffer,
-          ),
+          negotiationService.createEvent(deal.id, "offer", "agent", agentDecision.message, agentDecision.amount),
         );
-      } else if (deal.status === "close_to_accept" && intent.agent_permissions.canCloseInstantly) {
-        const accepted = dealService.updateAcceptedDeal(deal, listing.price, deal.current_offer);
-        accepted.last_message = "Seller aligned inside the approval band.";
-        Object.assign(deal, accepted);
-        store.events.unshift(
-          negotiationService.createEvent(
-            deal.id,
-            "accept",
-            "seller",
-            "Seller aligned inside the approval band.",
-            deal.current_offer,
-          ),
-        );
-        intent.status = "completed";
-        agent.best_deal_id = deal.id;
       }
+    } else if (agentDecision.action === "accept" && intent.agent_permissions.canCloseInstantly) {
+      const acceptedAmount = agentDecision.amount || response.amount;
+      const accepted = dealService.updateAcceptedDeal(deal, listing.price, acceptedAmount);
+      accepted.last_message = agentDecision.message;
+      Object.assign(deal, accepted);
+      store.events.unshift(
+        negotiationService.createEvent(deal.id, "accept", "agent", agentDecision.message, acceptedAmount),
+      );
+      intent.status = "completed";
+      agent.best_deal_id = deal.id;
+    } else if (agentDecision.action === "walk_away") {
+      deal.status = "expired";
+      deal.last_message = agentDecision.message;
+      store.events.unshift(
+        negotiationService.createEvent(deal.id, "reject", "agent", agentDecision.message),
+      );
+    } else {
+      deal.offers_sent += 1;
+      deal.last_message = agentDecision.message;
+      store.events.unshift(
+        negotiationService.createEvent(deal.id, "offer", "agent", agentDecision.message, deal.current_offer),
+      );
     }
 
     return deal;
@@ -123,25 +120,25 @@ function continueDeal(intent: Intent, agent: AgentProfile, listing: Listing, dea
   );
 
   if (deal.status !== "expired" && intent.agent_permissions.canIncreaseOffer) {
-    const retryOffer = roundCurrency(
-      Math.min(intent.max_price, deal.current_offer + clamp(intent.max_price * 0.03, 30, 95)),
-    );
-
-    if (retryOffer > deal.current_offer) {
-      deal.current_offer = retryOffer;
-      deal.offers_sent += 1;
-      deal.status = "negotiating";
-      deal.savings_amount = roundCurrency(Math.max(0, listing.price - retryOffer));
-      deal.last_message = `Agent re-entered negotiation at $${retryOffer}.`;
-      store.events.unshift(
-        negotiationService.createEvent(
-          deal.id,
-          "offer",
-          "agent",
-          `Updated execution path: $${retryOffer} with flexible pickup.`,
-          retryOffer,
-        ),
-      );
+    const fallbackOffer = roundCurrency(Math.min(intent.max_price, deal.current_offer + clamp(intent.max_price * 0.03, 30, 95)));
+    if (fallbackOffer > deal.current_offer) {
+       const agentDecision = await negotiationService.generateAgentCounterOffer(intent, listing, agent, deal, undefined, response.message);
+       if (agentDecision.action === "increase" && agentDecision.amount) {
+         deal.current_offer = agentDecision.amount;
+         deal.offers_sent += 1;
+         deal.status = "negotiating";
+         deal.savings_amount = roundCurrency(Math.max(0, listing.price - agentDecision.amount));
+         deal.last_message = agentDecision.message;
+         store.events.unshift(
+           negotiationService.createEvent(deal.id, "offer", "agent", agentDecision.message, agentDecision.amount),
+         );
+       } else if (agentDecision.action === "walk_away") {
+         deal.status = "expired";
+         deal.last_message = agentDecision.message;
+         store.events.unshift(
+           negotiationService.createEvent(deal.id, "reject", "agent", agentDecision.message),
+         );
+       }
     }
   }
 
@@ -149,7 +146,7 @@ function continueDeal(intent: Intent, agent: AgentProfile, listing: Listing, dea
 }
 
 export const agentService = {
-  runCycle() {
+  async runCycle() {
     const store = getStore();
     const now = new Date();
     const activeIntents = store.intents.filter((intent) => intent.status === "active");
@@ -176,8 +173,8 @@ export const agentService = {
         continue;
       }
 
-      const deal = maybeCreateDeal(intent, agent, selected);
-      continueDeal(intent, agent, selected, deal);
+      const deal = await maybeCreateDeal(intent, agent, selected);
+      await continueDeal(intent, agent, selected, deal);
       agent.last_action_at = now.toISOString();
       agent.actions_taken_today += 1;
       agent.best_deal_id = deal.id;

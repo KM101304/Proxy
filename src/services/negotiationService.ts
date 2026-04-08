@@ -1,80 +1,98 @@
-import { clamp, roundCurrency } from "@/lib/utils";
-import { AgentProfile, Deal, Intent, Listing, NegotiationEvent, Urgency } from "@/types/domain";
-
-function urgencyModifier(urgency: Urgency) {
-  if (urgency === "high") return 0.08;
-  if (urgency === "medium") return 0.04;
-  return 0;
-}
-
-function strategyModifier(strategy: AgentProfile["negotiation_strategy"]) {
-  if (strategy === "aggressive") return -0.07;
-  if (strategy === "conservative") return 0.04;
-  return -0.02;
-}
-
-function createMessage(offer: number, intent: Intent) {
-  const timing = intent.urgency === "high" ? "immediate settlement" : "pickup today";
-  return `Execution ready. I can close at $${offer} with ${timing}.`;
-}
+import { AgentProfile, Deal, Intent, Listing, NegotiationEvent } from "@/types/domain";
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
 
 export const negotiationService = {
-  generateOpeningOffer(intent: Intent, listing: Listing, agent: AgentProfile) {
-    const agedDiscount = clamp(listing.age_of_listing / 100, 0.03, 0.14);
-    const competitionPenalty = listing.competition * 0.08;
-    const floorRate =
-      1 -
-      agedDiscount -
-      urgencyModifier(intent.urgency) -
-      strategyModifier(agent.negotiation_strategy) +
-      competitionPenalty;
+  async generateOpeningOffer(intent: Intent, listing: Listing, agent: AgentProfile) {
+    const { object } = await generateObject({
+      model: openai("gpt-4o"),
+      system: `You are an AI purchasing agent acting on behalf of a buyer.
+Your goal is to negotiate the best possible price for an item.
+Buyer Intent:
+- Item: ${intent.item}
+- Max Price: $${intent.max_price}
+- Urgency: ${intent.urgency}
+- Flexibility: ${intent.flexibility}/10
 
-    const offer = roundCurrency(
-      Math.min(intent.max_price, Math.max(listing.price * clamp(floorRate, 0.74, 0.98), listing.price * 0.65)),
-    );
+Agent Strategy: ${agent.negotiation_strategy}
 
-    return {
-      amount: offer,
-      message: createMessage(offer, intent),
-    };
+Listing Details:
+- Title: ${listing.title}
+- Listed Price: $${listing.price}
+- Location: ${listing.location}
+- Age: ${listing.age_of_listing} days
+- Competition Activity: ${listing.competition}/10`,
+      prompt: "Formulate an opening offer that is below the listing price but reasonable enough not to be immediately rejected. Consider your strategy, urgency, and the listing's age. Provide a short, persuasive message to the seller to accompany the offer.",
+      schema: z.object({
+        amount: z.number().describe("The opening offer amount in dollars"),
+        message: z.string().describe("The message to send to the seller (keep it concise and professional)"),
+      }),
+    });
+
+    return object;
   },
 
-  evaluateResponse(intent: Intent, listing: Listing, deal: Deal) {
-    const offerRatio = deal.current_offer / listing.price;
-    const agedBoost = clamp(listing.age_of_listing / 40, 0, 0.32);
-    const urgencyBoost = urgencyModifier(intent.urgency);
-    const competitionPenalty = listing.competition * 0.28;
-    const acceptProbability = clamp(
-      offerRatio - 0.62 + agedBoost + urgencyBoost - competitionPenalty,
-      0.08,
-      0.94,
-    );
+  async evaluateResponse(intent: Intent, listing: Listing, deal: Deal) {
+    const historyContext = `Initial Offer: $${deal.current_offer}\nOffers sent: ${deal.offers_sent}\nCounters received: ${deal.counters_received}\nLast Message: "${deal.last_message || ''}"`;
 
-    if (acceptProbability > 0.78) {
-      return {
-        type: "accept" as const,
-        probability: acceptProbability,
-        amount: deal.current_offer,
-        message: "Accepted. Seller is ready to settle at the current offer.",
-      };
-    }
+    const { object } = await generateObject({
+      model: openai("gpt-4o"),
+      system: `You are simulating a human seller on a marketplace (like Craigslist or FB Marketplace).
+You are selling: ${listing.title} for $${listing.price}.
+The listing has been active for ${listing.age_of_listing} days. The competition score is ${listing.competition}/10.
 
-    if (acceptProbability > 0.46) {
-      const counterAmount = roundCurrency((listing.price + deal.current_offer) / 2);
-      return {
-        type: "counter" as const,
-        probability: acceptProbability,
-        amount: Math.min(counterAmount, intent.max_price),
-        message: `Counter received at $${Math.min(counterAmount, intent.max_price)}.`,
-      };
-    }
+A buyer's AI agent has made an offer.
+${historyContext}`,
+      prompt: `Evaluate the offer. Will you accept, counter, or reject?
+- If the offer is very close to your list price or your listing is old, you might accept.
+- If it's somewhat low, you might counter.
+- If it's an insulting lowball, you might reject.
 
-    return {
-      type: "reject" as const,
-      probability: acceptProbability,
-      amount: undefined,
-      message: "Seller rejected the offer and needs stronger pricing to continue.",
-    };
+Provide your decision, a counter amount (if countering), a short message responding to the agent, and a probability score (0.0 to 1.0) indicating how close you are to accepting.`,
+      schema: z.object({
+        type: z.enum(["accept", "counter", "reject"]),
+        amount: z.number().nullable().describe("The counter-offer amount in dollars (if type is 'counter', otherwise null)"),
+        message: z.string().describe("Your response message to the buyer's agent"),
+        probability: z.number().describe("A score from 0.0 to 1.0 indicating likelihood of reaching a deal"),
+      }),
+    });
+
+    return object;
+  },
+
+  async generateAgentCounterOffer(intent: Intent, listing: Listing, agent: AgentProfile, deal: Deal, sellerAmount?: number, sellerMessage?: string) {
+    const { object } = await generateObject({
+      model: openai("gpt-4o"),
+      system: `You are an AI purchasing agent negotiating for a buyer.
+Item: ${intent.item} (Max Budget: $${intent.max_price})
+Agent Permissions:
+- Can Negotiate: ${intent.agent_permissions.canNegotiate}
+- Can Increase Offer: ${intent.agent_permissions.canIncreaseOffer}
+- Can Close Instantly: ${intent.agent_permissions.canCloseInstantly}
+
+Current Deal State:
+- Your Previous Offer: $${deal.current_offer}
+- Offers Sent: ${deal.offers_sent}
+
+The Seller responded:
+- Message: "${sellerMessage || ''}"
+- Seller Counter Offer Amount: ${sellerAmount ? '$' + sellerAmount : 'None'}`,
+      prompt: `Decide your next move:
+- "increase": to make a higher counter-offer (must be <= max budget).
+- "accept": if the seller's counter is acceptable and within your max budget, and you have permission to close.
+- "hold": to maintain your current offer.
+- "walk_away": if the seller is demanding too much and won't budge.
+
+Provide your decision, the new amount (if increasing or accepting), and a short message to the seller.`,
+      schema: z.object({
+        action: z.enum(["increase", "accept", "hold", "walk_away"]),
+        amount: z.number().nullable().describe("The new explicit offer or accepted amount (otherwise null)"),
+        message: z.string().describe("Your message to the seller"),
+      }),
+    });
+
+    return object;
   },
 
   createEvent(dealId: string, type: NegotiationEvent["type"], actor: NegotiationEvent["actor"], message: string, amount?: number): NegotiationEvent {

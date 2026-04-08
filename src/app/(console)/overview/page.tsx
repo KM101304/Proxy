@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Target } from "lucide-react";
 import { MetricCard, PageHeader, Panel, StatusBadge, TableShell, Timeline } from "@/components/console-ui";
+import { AgentFloorEngine } from "@/components/agent-floor-engine";
 import { getConsoleData } from "@/lib/console-data";
 import { labelize, relativeTime, shortDate } from "@/lib/formatters";
 import { toneForDealStatus, toneForOperationalState } from "@/lib/presentation";
@@ -36,6 +37,8 @@ export default function OverviewPage() {
           </Link>
         }
       />
+
+      <AgentFloorEngine intentRows={data.intentRows} />
 
       <div className="grid gap-4 xl:grid-cols-4">
         <MetricCard
@@ -82,12 +85,12 @@ export default function OverviewPage() {
                     <div className="mt-1 text-lg font-medium text-[var(--text-primary)]">
                       {row.intent.item}
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                       Budget {currency(row.intent.max_price)}. {row.matchCount} candidate{" "}
                       {row.matchCount === 1 ? "listing" : "listings"} on file. Last activity{" "}
                       {relativeTime(row.activity[0]?.created_at ?? row.intent.created_at)}.
-                    </p>
-                  </div>
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <StatusBadge tone={toneForOperationalState(row.operationalState)}>
                       {labelize(row.operationalState)}

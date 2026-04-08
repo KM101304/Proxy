@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Bot, ShieldAlert, Sparkles, Target, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/cn";
 
 export function LaunchIntentForm() {
   const router = useRouter();
@@ -10,6 +11,12 @@ export function LaunchIntentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Form State
+  const [urgency, setUrgency] = useState("medium");
+  const [canIncrease, setCanIncrease] = useState(true);
+  const [canClose, setCanClose] = useState(false);
+
   const isBusy = isSubmitting || isPending;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -29,11 +36,11 @@ export function LaunchIntentForm() {
           item: formData.get("item"),
           location: formData.get("location"),
           max_price: Number(formData.get("max_price")),
-          urgency: formData.get("urgency"),
+          urgency,
           flexibility: Number(formData.get("flexibility")),
           agent_permissions: {
-            canIncreaseOffer: formData.get("can_increase_offer") === "on",
-            canCloseInstantly: formData.get("close_instantly") === "on",
+            canIncreaseOffer: canIncrease,
+            canCloseInstantly: canClose,
           },
         }),
       });
@@ -45,7 +52,7 @@ export function LaunchIntentForm() {
       }
 
       form.reset();
-      setSuccess(`Intent launched for ${payload.intent?.item ?? "the new target"}.`);
+      setSuccess(`Agent successfully deployed for ${payload.intent?.item ?? "the new target"}.`);
       startRefresh(() => router.refresh());
     } finally {
       setIsSubmitting(false);
@@ -53,43 +60,49 @@ export function LaunchIntentForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-5">
-      <div className="grid gap-2">
-        <label htmlFor="item" className="text-[11px] uppercase tracking-[0.22em] text-[var(--text-muted)]">
-          Target item
-        </label>
-        <input
-          id="item"
-          name="item"
-          required
-          placeholder="Brompton folding bike"
-          className="rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[rgba(199,160,106,0.35)]"
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <label
-          htmlFor="location"
-          className="text-[11px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
-        >
-          Market
-        </label>
-        <input
-          id="location"
-          name="location"
-          required
-          placeholder="Chicago"
-          className="rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[rgba(199,160,106,0.35)]"
-        />
+    <form onSubmit={handleSubmit} className="grid gap-6">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(56,189,248,0.15)] border border-[rgba(56,189,248,0.3)] shadow-[0_0_10px_rgba(56,189,248,0.2)]">
+          <Bot className="h-5 w-5 text-[var(--accent-strong)]" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Agent Configuration</h2>
+          <p className="text-xs text-[var(--text-secondary)]">Specify target and parameters for deployment</p>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="grid gap-2">
-          <label
-            htmlFor="max_price"
-            className="text-[11px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
-          >
-            Max budget
+          <label htmlFor="item" className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] flex items-center gap-1.5">
+            <Target className="h-3 w-3 text-[var(--accent)]" /> Target Item
+          </label>
+          <input
+            id="item"
+            name="item"
+            required
+            placeholder="e.g. Brompton folding bike"
+            className="rounded-xl border border-[var(--border-strong)] bg-[rgba(15,23,42,0.6)] px-4 py-3 placeholder-[--text-muted] text-sm text-[var(--text-primary)] outline-none transition duration-300 focus:border-[var(--accent-strong)] focus:shadow-[0_0_15px_rgba(56,189,248,0.25)] focus:ring-1 focus:ring-[var(--accent)]"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <label htmlFor="location" className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+            Market / Location
+          </label>
+          <input
+            id="location"
+            name="location"
+            required
+            placeholder="e.g. Chicago"
+            className="rounded-xl border border-[var(--border-strong)] bg-[rgba(15,23,42,0.6)] px-4 py-3 placeholder-[--text-muted] text-sm text-[var(--text-primary)] outline-none transition duration-300 focus:border-[var(--accent-strong)] focus:shadow-[0_0_15px_rgba(56,189,248,0.25)] focus:ring-1 focus:ring-[var(--accent)]"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-2">
+          <label htmlFor="max_price" className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+            Max Budget ($)
           </label>
           <input
             id="max_price"
@@ -98,15 +111,12 @@ export function LaunchIntentForm() {
             min="1"
             required
             placeholder="1600"
-            className="rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[rgba(199,160,106,0.35)]"
+            className="rounded-xl border border-[var(--border-strong)] bg-[rgba(15,23,42,0.6)] px-4 py-3 placeholder-[--text-muted] text-sm text-[var(--text-primary)] outline-none transition duration-300 focus:border-[var(--accent-strong)] focus:shadow-[0_0_15px_rgba(56,189,248,0.25)] focus:ring-1 focus:ring-[var(--accent)]"
           />
         </div>
 
         <div className="grid gap-2">
-          <label
-            htmlFor="flexibility"
-            className="text-[11px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
-          >
+          <label htmlFor="flexibility" className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
             Flexibility %
           </label>
           <input
@@ -116,72 +126,114 @@ export function LaunchIntentForm() {
             min="0"
             max="50"
             defaultValue="10"
-            className="rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[rgba(199,160,106,0.35)]"
+            className="rounded-xl border border-[var(--border-strong)] bg-[rgba(15,23,42,0.6)] px-4 py-3 placeholder-[--text-muted] text-sm text-[var(--text-primary)] outline-none transition duration-300 focus:border-[var(--accent-strong)] focus:shadow-[0_0_15px_rgba(56,189,248,0.25)] focus:ring-1 focus:ring-[var(--accent)]"
           />
         </div>
-      </div>
 
-      <div className="grid gap-2">
-        <label
-          htmlFor="urgency"
-          className="text-[11px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
-        >
-          Urgency
-        </label>
-        <select
-          id="urgency"
-          name="urgency"
-          defaultValue="medium"
-          className="rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-strong)] px-4 py-3.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[rgba(199,160,106,0.35)]"
-        >
-          <option value="low">Low urgency</option>
-          <option value="medium">Medium urgency</option>
-          <option value="high">High urgency</option>
-        </select>
-      </div>
-
-      <div className="rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] p-4">
-        <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
-          Execution permissions
-        </div>
-        <div className="mt-3 grid gap-3">
-          <label className="flex items-start gap-3 rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-soft)] px-4 py-4 text-sm leading-6 text-[var(--text-secondary)]">
-            <input
-              name="can_increase_offer"
-              type="checkbox"
-              defaultChecked
-              className="mt-1 h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--background-panel-strong)] accent-[var(--accent-strong)]"
-            />
-            <span>Allow the agent to advance pricing within the approved budget.</span>
+        <div className="grid gap-2">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+            Urgency Profile
           </label>
-
-          <label className="flex items-start gap-3 rounded-[18px] border border-[var(--border-soft)] bg-[var(--background-panel-soft)] px-4 py-4 text-sm leading-6 text-[var(--text-secondary)]">
-            <input
-              name="close_instantly"
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--background-panel-strong)] accent-[var(--accent-strong)]"
-            />
-            <span>Permit immediate settlement when the offer enters the approval band.</span>
-          </label>
+          <div className="flex gap-2">
+            {["low", "medium", "high"].map((level) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => setUrgency(level)}
+                className={cn(
+                  "flex-1 rounded-xl border text-xs font-medium uppercase py-3 transition duration-300 capitalize",
+                  urgency === level
+                    ? "border-[var(--accent)] bg-[rgba(56,189,248,0.15)] text-[var(--accent-strong)] shadow-[0_0_10px_rgba(56,189,248,0.2)]"
+                    : "border-[var(--border-soft)] bg-[rgba(15,23,42,0.4)] text-[var(--text-muted)] hover:border-[var(--text-muted)] float-hover"
+                )}
+              >
+                {level}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Launch creates an explicit instruction, not a hidden autonomous loop.
+      <div className="rounded-2xl border border-[var(--border-strong)] bg-[rgba(139,92,246,0.05)] p-5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[rgba(139,92,246,0.1)] rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+        
+        <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-4 flex items-center gap-1.5">
+          <ShieldAlert className="h-3 w-3 text-[#8b5cf6]" /> Execution Permissions
+        </div>
+        
+        <div className="grid gap-3 sm:grid-cols-2 relative z-10">
+          <button
+            type="button"
+            onClick={() => setCanIncrease(!canIncrease)}
+            className={cn(
+              "flex flex-col items-start text-left gap-2 rounded-xl border p-4 transition-all duration-300",
+              canIncrease
+                ? "border-[rgba(139,92,246,0.4)] bg-[rgba(139,92,246,0.1)] shadow-[0_0_12px_rgba(139,92,246,0.15)]"
+                : "border-[var(--border-soft)] bg-[rgba(15,23,42,0.4)] opacity-70 hover:opacity-100"
+            )}
+          >
+            <div className="flex w-full items-center justify-between">
+              <span className={cn("text-xs font-bold uppercase tracking-wider", canIncrease ? "text-[#a78bfa]" : "text-[var(--text-muted)]")}>
+                Advance Pricing
+              </span>
+              <div className={cn("h-3 w-3 rounded-full border", canIncrease ? "bg-[#a78bfa] border-[#a78bfa] shadow-[0_0_5px_#a78bfa]" : "border-gray-500")} />
+            </div>
+            <span className="text-[11px] leading-relaxed text-[var(--text-secondary)]">
+              Allow agent to autonomously increase offer within max budget.
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCanClose(!canClose)}
+            className={cn(
+              "flex flex-col items-start text-left gap-2 rounded-xl border p-4 transition-all duration-300",
+              canClose
+                ? "border-[rgba(16,185,129,0.4)] bg-[rgba(16,185,129,0.1)] shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                : "border-[var(--border-soft)] bg-[rgba(15,23,42,0.4)] opacity-70 hover:opacity-100"
+            )}
+          >
+            <div className="flex w-full items-center justify-between">
+              <span className={cn("text-xs font-bold uppercase tracking-wider", canClose ? "text-[#34d399]" : "text-[var(--text-muted)]")}>
+                Instant Settle
+              </span>
+              <div className={cn("h-3 w-3 rounded-full border", canClose ? "bg-[#34d399] border-[#34d399] shadow-[0_0_5px_#34d399]" : "border-gray-500")} />
+            </div>
+            <span className="text-[11px] leading-relaxed text-[var(--text-secondary)]">
+              Permit immediate settlement when seller enters approval band.
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2 border-t border-[rgba(255,255,255,0.05)]">
+        <div className="text-[11px] uppercase tracking-[0.15em] text-[var(--text-muted)] flex items-center gap-2">
+          <Zap className="h-4 w-4 text-yellow-500" />
+          Autonomous deployment creates an active agent loop.
         </div>
         <button
           type="submit"
           disabled={isBusy}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--text-primary)] px-4 py-3 text-sm font-semibold text-slate-950 transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-70"
+          className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[var(--accent-strong)] to-[rgba(139,92,246,1)] px-5 py-3 text-sm font-bold text-white transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(56,189,248,0.5)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
         >
-          {isBusy ? "Launching" : "Launch Intent"}
-          <ArrowRight className="h-4 w-4" />
+          {isBusy ? (
+            <span className="animate-pulse flex items-center gap-2">Deploying <Sparkles className="h-4 w-4 animate-spin" /></span>
+          ) : (
+            <>Deploy Agent <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></>
+          )}
         </button>
       </div>
 
-      {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
-      {success ? <p className="text-sm text-[var(--positive)]">{success}</p> : null}
+      {error ? (
+        <div className="p-3 rounded-lg bg-[rgba(239,68,68,0.1)] border border-red-500 text-sm text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="p-3 rounded-lg bg-[rgba(16,185,129,0.1)] border border-[var(--positive)] text-sm text-[var(--positive)] shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+          {success}
+        </div>
+      ) : null}
     </form>
   );
 }

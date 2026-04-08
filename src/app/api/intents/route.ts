@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     store.agents.unshift(agent);
     logger.info("Intent created", { intentId: intent.id, item, location });
 
-    const snapshot = agentService.runCycle();
+    const snapshot = await agentService.runCycle();
 
     return NextResponse.json({ intent, agent, snapshot }, { status: 201 });
   } catch (error) {

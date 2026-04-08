@@ -67,46 +67,46 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-[var(--text-primary)]">
-      <div className="mx-auto flex min-h-screen max-w-[1640px]">
-        <aside className="sticky top-0 hidden h-screen w-[268px] shrink-0 border-r border-[var(--border-soft)] bg-[rgba(8,10,15,0.92)] px-4 py-5 lg:flex lg:flex-col">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+      <div className="mx-auto flex min-h-screen">
+        <aside className="sticky top-0 hidden h-screen w-[268px] shrink-0 border-r border-[var(--border-soft)] bg-[var(--background)] px-4 py-5 lg:flex lg:flex-col z-30">
           <Link
             href="/overview"
-            className="rounded-[24px] border border-[var(--border-strong)] bg-[linear-gradient(180deg,rgba(199,160,106,0.12),rgba(14,18,26,0.96))] px-4 py-4 transition hover:border-[rgba(199,160,106,0.28)]"
+            className="border border-[var(--border-soft)] bg-[var(--background-panel)] px-4 py-4 transition hover:border-[var(--accent)] hover:bg-[#111]"
           >
             <div className="flex items-center gap-3">
               <LogoMark />
               <div>
-                <div className="text-[13px] font-semibold uppercase tracking-[0.28em] text-[var(--text-primary)]">
-                  Proxy
+                <div className="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--text-primary)]">
+                  PROXY
                 </div>
-                <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                  Market operating system
+                <div className="mt-1 text-[10px] uppercase text-[var(--text-secondary)] font-mono">
+                  SYS.TERMINAL.01
                 </div>
               </div>
             </div>
-            <div className="mt-4 grid gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <div className="mt-4 grid gap-2 text-[10px] uppercase font-mono text-[var(--text-muted)] border-t border-[var(--border-soft)] pt-3">
               <div className="flex items-center justify-between gap-3">
-                <span>Mode</span>
-                <span className="text-[var(--text-primary)]">Simulation</span>
+                <span>OP_MODE</span>
+                <span className="text-[var(--accent)] bg-[#221a00] px-1 font-bold">LIVE</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>Last cycle</span>
-                <span className="text-[var(--text-primary)]">{shortTime(lastRunAt)} UTC</span>
+                <span>LAST_SYNC</span>
+                <span className="text-[var(--positive)]">{shortTime(lastRunAt)} UTC</span>
               </div>
             </div>
           </Link>
 
           <div className="mt-6 flex-1 space-y-6 overflow-y-auto pr-1">
             {[
-              { label: "Command", items: primaryNavigation },
-              { label: "System", items: secondaryNavigation },
+              { label: "CMND_SURFACE", items: primaryNavigation },
+              { label: "SYS_SURFACE", items: secondaryNavigation },
             ].map((section) => (
               <div key={section.label}>
-                <div className="px-2 text-[10px] uppercase tracking-[0.28em] text-[var(--text-muted)]">
+                <div className="px-2 text-[10px] bg-[#111] border-b border-[var(--border-soft)] py-1 font-mono uppercase text-[var(--text-muted)]">
                   {section.label}
                 </div>
-                <div className="mt-2 space-y-1.5">
+                <div className="mt-2 space-y-0 text-sm font-mono tracking-tight">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href);
@@ -116,25 +116,19 @@ export function AppShell({
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "group flex items-center gap-3 rounded-[18px] border px-3 py-2.5 text-sm transition",
+                          "group flex items-center gap-3 border-l-2 px-3 py-1.5 transition-none",
                           active
-                            ? "border-[rgba(199,160,106,0.24)] bg-[rgba(199,160,106,0.1)] text-[var(--text-primary)]"
-                            : "border-transparent bg-transparent text-[var(--text-secondary)] hover:border-[var(--border-soft)] hover:bg-[var(--background-panel-soft)] hover:text-[var(--text-primary)]",
+                            ? "border-[var(--accent)] bg-[var(--background-panel-strong)] text-[var(--accent)] font-bold"
+                            : "border-transparent bg-transparent text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:bg-[#111] hover:text-[var(--text-primary)]",
                         )}
                       >
-                        <span
-                          className={cn(
-                            "flex h-8 w-8 items-center justify-center rounded-xl border transition",
-                            active
-                              ? "border-[rgba(199,160,106,0.24)] bg-[rgba(199,160,106,0.12)] text-[var(--accent-strong)]"
-                              : "border-[var(--border-soft)] bg-[var(--background-panel)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
-                          )}
-                        >
-                          <Icon className="h-4 w-4" />
+                        <span className={cn("flex items-center justify-center")}>
+                          <Icon className="h-[14px] w-[14px] stroke-[2.5]" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium">{item.label}</div>
+                          <div>{item.label.toUpperCase()}</div>
                         </div>
+                        {active && <span className="text-[10px]">_</span>}
                       </Link>
                     );
                   })}
@@ -143,134 +137,95 @@ export function AppShell({
             ))}
           </div>
 
-          <div className="mt-6 rounded-[20px] border border-[var(--border-soft)] bg-[var(--background-panel)] p-4">
-            <div className="text-[10px] uppercase tracking-[0.26em] text-[var(--text-muted)]">
-              Command posture
+          <div className="mt-6 border border-[var(--border-soft)] bg-[var(--background-panel)] p-3">
+            <div className="text-[10px] uppercase font-mono border-b border-[var(--border-soft)] pb-1 mb-2 text-[var(--accent)]">
+              &gt; STATUS_MATRIX
             </div>
-            <div className="mt-3 grid gap-3">
-              <MiniStat label="Active intents" value={String(stats.activeAgents)} />
-              <MiniStat label="Negotiations live" value={String(stats.negotiationsLive)} />
-              <MiniStat label="Settled deals" value={String(stats.acceptedDeals)} />
+            <div className="mt-2 grid gap-1">
+              <MiniStat label="AGENTS_UP" value={String(stats.activeAgents)} isHighlight />
+              <MiniStat label="NEG_LIVE" value={String(stats.negotiationsLive)} />
+              <MiniStat label="DEALS_SETTLED" value={String(stats.acceptedDeals)} />
             </div>
           </div>
         </aside>
 
-        <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 border-b border-[var(--border-soft)] bg-[rgba(7,10,15,0.88)] backdrop-blur">
-            <div className="px-4 py-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex items-start gap-4">
-                  <Link
-                    href="/overview"
-                    className="flex items-center gap-3 rounded-[20px] border border-[var(--border-soft)] bg-[var(--background-panel)] px-3 py-2 lg:hidden"
-                  >
-                    <LogoMark size={34} />
-                    <span className="text-[12px] font-semibold uppercase tracking-[0.24em] text-[var(--text-primary)]">
-                      Proxy
-                    </span>
-                  </Link>
-                  <div className="hidden lg:block">
-                    <div className="text-[10px] uppercase tracking-[0.26em] text-[var(--text-muted)]">
-                      {currentSurface.section}
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-3">
-                      <h1 className="text-sm font-medium uppercase tracking-[0.24em] text-[var(--text-primary)]">
-                        {currentSurface.label}
-                      </h1>
-                      <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
-                      <span className="text-sm text-[var(--text-secondary)]">
-                        Seller-side market command layer
-                      </span>
-                    </div>
+        <div className="min-w-0 flex-1 relative flex flex-col">
+          <header className="sticky top-0 z-20 border-b border-[var(--border-soft)] bg-[var(--background)] mx-0 mt-0 mb-4 px-4 py-3 sm:px-6">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-start gap-4">
+                <Link
+                  href="/overview"
+                  className="flex items-center gap-3 border border-[var(--border-soft)] bg-[var(--background-panel)] px-2 py-1 lg:hidden"
+                >
+                  <LogoMark size={24} />
+                  <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[var(--accent)]">
+                    PROXY
+                  </span>
+                </Link>
+                <div className="hidden lg:flex lg:flex-row lg:items-center gap-4">
+                  <div className="bg-[var(--accent)] text-black px-2 py-0.5 text-xs font-bold uppercase font-mono tracking-tight">
+                    {currentSurface.section} / {currentSurface.label}
                   </div>
-                  <div className="lg:hidden">
-                    <div className="text-[10px] uppercase tracking-[0.26em] text-[var(--text-muted)]">
-                      {currentSurface.section}
-                    </div>
-                    <div className="mt-1 text-sm font-medium text-[var(--text-primary)]">
-                      {currentSurface.label}
-                    </div>
-                    <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      {stats.activeAgents} intents · {stats.negotiationsLive} live · {stats.acceptedDeals} settled
-                    </div>
-                    <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                      Last cycle {shortTime(lastRunAt)} UTC
-                    </div>
+                  <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-mono flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 bg-[var(--positive)] block animate-pulse" />
+                    DATA NODE CONNECTED
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="hidden grid-cols-3 gap-2 rounded-[20px] border border-[var(--border-soft)] bg-[var(--background-panel)] p-1.5 sm:grid">
-                    <TopMetric label="Intents" value={stats.activeAgents} />
-                    <TopMetric label="Live" value={stats.negotiationsLive} />
-                    <TopMetric label="Settled" value={stats.acceptedDeals} />
-                  </div>
-                  <RunCycleButton />
+                <div className="lg:hidden text-xs font-mono uppercase text-[var(--text-muted)]">
+                  <div>{currentSurface.section} / {currentSurface.label}</div>
+                  <div className="mt-1 text-[var(--positive)]">&gt; OP_MODE: LIVE</div>
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-                {primaryNavigation.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "shrink-0 rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.18em] transition",
-                      isActive(item.href)
-                        ? "border-[rgba(199,160,106,0.24)] bg-[var(--accent-soft)] text-[var(--text-primary)]"
-                        : "border-[var(--border-soft)] bg-[var(--background-panel)] text-[var(--text-secondary)]",
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-
-              <details className="mt-3 rounded-[20px] border border-[var(--border-soft)] bg-[var(--background-panel)] lg:hidden">
-                <summary className="cursor-pointer list-none px-4 py-3 text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                  System surfaces
-                </summary>
-                <div className="grid gap-2 border-t border-[var(--border-soft)] px-3 py-3">
-                  {secondaryNavigation.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "rounded-[16px] border px-3 py-2 text-sm transition",
-                        isActive(item.href)
-                          ? "border-[rgba(199,160,106,0.24)] bg-[var(--accent-soft)] text-[var(--text-primary)]"
-                          : "border-[var(--border-soft)] bg-[var(--background-panel-soft)] text-[var(--text-secondary)]",
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="hidden grid-cols-3 gap-0 border border-[var(--border-soft)] bg-[var(--background-panel-strong)] sm:grid divide-x divide-[var(--border-soft)]">
+                  <TopMetric label="AGENTS" value={stats.activeAgents} />
+                  <TopMetric label="LIVE" value={stats.negotiationsLive} />
+                  <TopMetric label="STLD" value={stats.acceptedDeals} />
                 </div>
-              </details>
+                <RunCycleButton />
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
+              {primaryNavigation.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "shrink-0 border px-3 py-1 text-[10px] font-mono uppercase transition-none cursor-pointer",
+                    isActive(item.href)
+                      ? "border-[var(--accent)] bg-[#221a00] text-[var(--accent)] font-bold"
+                      : "border-[var(--border-soft)] bg-transparent text-[var(--text-secondary)]",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </header>
 
-          <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+          <main className="px-4 pb-12 sm:px-6 lg:px-8 flex-1">{children}</main>
         </div>
       </div>
     </div>
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value, isHighlight }: { label: string; value: string; isHighlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[var(--border-soft)] bg-[var(--background-panel-soft)] px-3 py-2">
-      <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">{label}</span>
-      <span className="text-sm font-medium text-[var(--text-primary)]">{value}</span>
+    <div className={cn("flex items-center justify-between font-mono text-[11px] uppercase border border-[var(--border-soft)] px-2 py-1", isHighlight ? "bg-[#111]" : "bg-transparent")}>
+      <span className={cn(isHighlight ? "text-[var(--text-primary)] font-bold" : "text-[var(--text-muted)]")}>{label}</span>
+      <span className={cn(isHighlight ? "text-[var(--accent)] font-bold" : "text-[var(--text-primary)]")}>{value}</span>
     </div>
   );
 }
 
 function TopMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-[16px] bg-[var(--background-panel-soft)] px-3 py-2 text-center">
-      <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{value}</div>
+    <div className="bg-[var(--background-panel)] px-4 py-1 text-center cursor-default font-mono">
+      <div className="text-[9px] uppercase text-[var(--text-muted)]">{label}</div>
+      <div className="text-[12px] font-bold text-[var(--text-primary)]">{value}</div>
     </div>
   );
 }

@@ -7,45 +7,35 @@ export function LogoMark({ size = 46 }: { size?: number }) {
       height={size}
       className="shrink-0"
     >
-      <defs>
-        <linearGradient id="proxy-mark-fill" x1="0%" x2="100%" y1="0%" y2="100%">
-          <stop offset="0%" stopColor="rgba(199,160,106,0.32)" />
-          <stop offset="100%" stopColor="rgba(199,160,106,0.08)" />
-        </linearGradient>
-      </defs>
       <rect
         x="2"
         y="2"
         width="60"
         height="60"
-        rx="16"
-        fill="url(#proxy-mark-fill)"
-        stroke="rgba(199,160,106,0.3)"
-        strokeWidth="1.5"
+        fill="#000000"
+        stroke="var(--accent)"
+        strokeWidth="2"
+        rx="0"
       />
       <path
-        d="M18 20h28M18 32h28M18 44h28"
-        fill="none"
-        opacity="0.28"
-        stroke="var(--text-muted)"
-        strokeLinecap="round"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M20 18h12.5c7.5 0 12.5 5 12.5 11.5S40 41 32.5 41H20V18Zm0 23v9"
+        d="M20 16h20v20H20V16Zm0 20v14"
         fill="none"
         stroke="var(--accent-strong)"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="3.25"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+        strokeWidth="4"
       />
       <path
-        d="M30 22 43 42M43 22 30 42"
-        fill="none"
-        stroke="var(--text-primary)"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="3.25"
+        d="M4 32h10 M50 32h10 M32 4v10 M32 50v10"
+        stroke="var(--text-muted)"
+        strokeWidth="2"
+      />
+      <rect 
+        x="28" 
+        y="24" 
+        width="4" 
+        height="4" 
+        fill="var(--positive)" 
       />
     </svg>
   );
